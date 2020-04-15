@@ -7,7 +7,7 @@ as they are defined in **N. Artrith and A. Urban, Comput. Mater. Sci. 114 (2016)
 ## Installation:
 
 ```
-] add https://github.com/berkonat/CHSF.jl.git
+] add https://github.com/DescriptorZoo/CHSF.jl.git
 ] test CHSF
 ```
 
