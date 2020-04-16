@@ -1,3 +1,5 @@
+![CI](https://github.com/DescriptorZoo/CHSF.jl/workflows/CI/badge.svg)
+
 # CHSF.jl
 Julia port of Chebyshev Polynomial variant of Atom Centred Symmetry Functions (CHSF)
 
