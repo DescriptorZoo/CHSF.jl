@@ -31,5 +31,5 @@ jobs:
         show-versioninfo: true # optional, default is false
     - run: |
         using InteractiveUtils; versioninfo()
-        using Pkg; println($GITHUB_WORKSPACE); println("$GITHUB_WORKSPACE"); Pkg.add("$GITHUB_WORKSPACE"); Pkg.test("CHSF")
+        using Pkg; println("$GITHUB_WORKSPACE"); Pkg.add("$GITHUB_WORKSPACE"); Pkg.test("CHSF")
       shell: bash -c "julia --color=yes --project {0}"
