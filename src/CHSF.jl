@@ -108,9 +108,6 @@ end
 function c_RADF(Rj, dj, n, l, Rc)
     wtj = 1 # Single specie case!
     wtk = 1 # Single specie case!
-    if m<1
-        m=1
-    end
     phi_Rc = chsfPI
     counts = collect(1:size(Rj,1))
     ### So far I couldn't find another way to do this simpler.
