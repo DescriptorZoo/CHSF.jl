@@ -105,13 +105,13 @@ function c_RADF2(Rj, dj, n, l, Rc; m=1)
     return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij * fc_j)))
 end
 
-function c_RADF(Rj, dj, n, l, Rc; m=1)
+function c_RADF(Rj, dj, n, l, Rc)
     wtj = 1 # Single specie case!
     wtk = 1 # Single specie case!
     if m<1
         m=1
     end
-    phi_Rc = chsfPI^m
+    phi_Rc = chsfPI
     counts = collect(1:size(Rj,1))
     ### So far I couldn't find another way to do this simpler.
     Rij = collect(Iterators.flatten([[Rj[j] for k in counts] for j in counts]))
@@ -120,7 +120,7 @@ function c_RADF(Rj, dj, n, l, Rc; m=1)
     Dik = collect(Iterators.flatten([[dj[k] for k in counts] for j in counts]))
     ###
     cos_theta_ijk = [Rik[i,:]' * Rij[i,:] for i=1:size(Rij,1)] ./ (Dij .* Dik)
-    scaled_theta = (2.0 .* cos_theta_ijk.^(2*m) .- phi_Rc) ./ phi_Rc
+    scaled_theta = (2.0 .* cos_theta_ijk .- phi_Rc) ./ phi_Rc
     phi_ijk = chebyshev(scaled_theta, l-1)
     fc_ij = cutoff_func(Dij, Rc) .* wtj
     fc_ik = cutoff_func(Dik, Rc) .* wtk
@@ -132,7 +132,7 @@ function c_RADF(Rj, dj, n, l, Rc; m=1)
     return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
 end
 
-function chsf_desc2(Rs, Rc; n=nothing, l=nothing, m=nothing)
+function chsf_desc2(Rs, Rc; n=nothing, l=nothing)
     ds = norm.(Rs)
     descriptor = []
     if n == nothing
@@ -141,10 +141,7 @@ function chsf_desc2(Rs, Rc; n=nothing, l=nothing, m=nothing)
     if l == nothing
         l = 0
     end
-    if l == nothing
-        m = 1
-    end
-    descriptor = vcat(descriptor,c_RADF(Rs, ds, n+1, l+1, Rc, m=m))
+    descriptor = vcat(descriptor,c_RADF(Rs, ds, n+1, l+1, Rc))
     return descriptor
 end
 
