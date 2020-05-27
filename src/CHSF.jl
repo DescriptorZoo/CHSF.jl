@@ -105,7 +105,7 @@ function c_RADF2(Rj, dj, n, l, Rc; m=1)
     return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij * fc_j)))
 end
 
-function c_RADF(Rj, dj, n, l, Rc)
+function c_RADF(Rj, dj, n, l, Rc; g=false)
     wtj = 1 # Single specie case!
     wtk = 1 # Single specie case!
     phi_Rc = chsfPI
@@ -126,10 +126,14 @@ function c_RADF(Rj, dj, n, l, Rc)
     phi_ij = chebyshev(scaled_r_ij, n-1)
     phi_ik = chebyshev(scaled_r_ik, n-1)
     jkmask = collect(Iterators.flatten([[k>=(j+1) for k in counts] for j in counts]))
-    return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
+    if g
+        return collect(Iterators.flatten((phi_ijk[:,jkmask] * (exp.(Dij[jkmask].^2) .* fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
+    else
+        return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
+    end
 end
 
-function chsf_desc2(Rs, Rc; n=nothing, l=nothing)
+function chsf_desc2(Rs, Rc; n=nothing, l=nothing, g=false)
     ds = norm.(Rs)
     descriptor = []
     if n == nothing
@@ -138,7 +142,7 @@ function chsf_desc2(Rs, Rc; n=nothing, l=nothing)
     if l == nothing
         l = 0
     end
-    descriptor = vcat(descriptor,c_RADF(Rs, ds, n+1, l+1, Rc))
+    descriptor = vcat(descriptor,c_RADF(Rs, ds, n+1, l+1, Rc, g=g))
     return descriptor
 end
 
@@ -200,7 +204,7 @@ function chsf(at, Rc; n=nothing, l=nothing)
     return representation
 end
 
-function chsf2(at, Rc; n=nothing, l=nothing, m=nothing)
+function chsf2(at, Rc; n=nothing, l=nothing, g=false)
     representation = []
     ni = []
     nj = []
@@ -214,7 +218,7 @@ function chsf2(at, Rc; n=nothing, l=nothing, m=nothing)
     end
     for i=1:length(at)
         Rs = nR[(ni .== i)]
-        push!(representation,chsf_desc2(Rs, Rc, n=n, l=l, m=m))
+        push!(representation,chsf_desc2(Rs, Rc, n=n, l=l, g=g))
     end
     return representation
 end

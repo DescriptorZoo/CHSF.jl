@@ -12,4 +12,8 @@ chsf_now = vcat(desc[1,:]...)
 println("CHSF.jl returns:",chsf_now)
 println("Reference:",chsf_ref)
 println(@test chsf_now  ≈  chsf_ref)
+
+desc = chsf2(at, 6.5, n=2, l=2, g=true)
+chsf_now = vcat(desc[1,:]...)
+println("CHSF.jl 2 returns:",chsf_now)
 end
