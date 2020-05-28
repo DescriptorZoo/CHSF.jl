@@ -127,7 +127,8 @@ function c_RADF(Rj, dj, n, l, Rc; g=false)
     phi_ik = chebyshev(scaled_r_ik, n-1)
     jkmask = collect(Iterators.flatten([[k>=(j+1) for k in counts] for j in counts]))
     if g
-        return collect(Iterators.flatten((phi_ijk[:,jkmask] * (exp.(Dij[jkmask].^2) .* fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
+        #return collect(Iterators.flatten((phi_ijk[:,jkmask] * (exp.(Dij[jkmask].^2) .* fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
+        return collect(Iterators.flatten(sum(phi_ijk[:,jkmask],dims=2) * transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask]) ) )
     else
         return collect(Iterators.flatten((phi_ijk[:,jkmask] * (fc_ij[jkmask] .* fc_ik[jkmask])) .* transpose(phi_ij[:,jkmask] * fc_ij[jkmask] .* phi_ik[:,jkmask] * fc_ik[jkmask])))
     end
