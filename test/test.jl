@@ -13,7 +13,14 @@ println("CHSF.jl returns:",chsf_now)
 println("Reference:",chsf_ref)
 println(@test chsf_now  ≈  chsf_ref)
 
-desc = chsf2(at, 6.5, n=2, l=2, g=true)
+desc = chsf_n(at, 6.5, n=2, l=2)
 chsf_now = vcat(desc[1,:]...)
-println("CHSF.jl 2 returns:",chsf_now)
+println("CHSF.jl ADF new returns:",chsf_now)
+println("Reference:",chsf_ref)
+println(@test chsf_now  ≈  chsf_ref)
+
+desc = chsf_RADF(at, 6.5, n=2, l=2)
+chsf_now = vcat(desc[1,:]...)
+println("CHSF.jl RADF new returns:",chsf_now)
+
 end
