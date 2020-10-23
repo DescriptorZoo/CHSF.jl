@@ -77,7 +77,10 @@ function c_RADFn(Rj, nmax, lmax, Rc)
     return D
 end
 
-function c_RADFnnl(Rj, nmax, lmax, Rc)
+function c_RADFnnl(Rj, nmax, lmax, Rc; wj=nothing)
+    if wj == nothing
+        wj = 1.
+    end
     dj = norm.(Rj)
     fc_ij = cutoff_func(dj, Rc)
     D = zeros(nmax, nmax, lmax)
@@ -92,11 +95,22 @@ function c_RADFnnl(Rj, nmax, lmax, Rc)
        for n = 1:nmax, np = 1:nmax, l = 1:lmax
            D[n, np, l] += Aijk[l] * Pj[n] * Pk[np]
        end
+       D[:,:,:] .*= wj[j] .* wj[k]
     end 
     return D[:]
 end
 
-function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false)
+function c_RADFnnl_weights(DD, W, nmax, lmax)
+    D = zeros(size(W,1), nmax, nmax, lmax)
+    for wi = 1:size(W,1)
+       for j = 1:length(Rj)-1, k = j+1:length(Rj)
+          D[wi,:,:,:] = DD[:,:,:] .* W[wi,j] .* W[wi,k]
+       end
+    end 
+    return D[:]
+end
+
+function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false, wj=nothing)
     if n == nothing
         n = 0
     end
@@ -104,7 +118,7 @@ function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false)
         l = 0
     end
     if np
-        return c_RADFnnl(Rs, n+1, l+1, Rc)
+        return c_RADFnnl(Rs, n+1, l+1, Rc, wj=wj)
     else
         return c_RADFn(Rs, n+1, l+1, Rc)
     end
@@ -128,17 +142,28 @@ function chsf_desc(Rs, Rc; n=nothing, l=nothing)
     return descriptor
 end
 
-function chsf_RADF(at, Rc; n=nothing, l=nothing, np=true)
+function chsf_jlist(at, Rc)
+    js = []
+    for (i, j, R) in pairs(neighbourlist(at, Rc))
+        push!(js, j)
+    end
+    return js
+end
+
+function chsf_RADF(at, Rc; n=nothing, l=nothing, np=true, w=nothing)
     representation = []
     ni = []
     nR = []
+    nw = []
     for (i, j, R) in pairs(neighbourlist(at, Rc))
         push!(ni, i)
         push!(nR, R)
+        push!(nw, w[j])
     end
     for i=1:length(at)
         Rs = nR[(ni .== i)]
-        push!(representation,chsf_desc_RADF(Rs, Rc, n=n, l=l, np=np))
+        ws = nw[(ni .== i)]
+        push!(representation,chsf_desc_RADF(Rs, Rc, n=n, l=l, np=np, wj=ws))
     end
     return representation
 end
