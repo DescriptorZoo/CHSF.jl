@@ -22,5 +22,5 @@ chsf(atoms, rcut, n=2, l=2)
 ### How to cite:
 
 If you use this code, we would appreciate if you cite the following papers:
-- Berk Onat, Christoph Ortner, James R. Kermode, 	[arXiv:2006.01915 (2020)](https://arxiv.org/abs/2006.01915)
+- Berk Onat, Christoph Ortner, James R. Kermode, 	J. Chem. Phys. 153, 144106 (2020) [Paper DOI:10.1063/5.0016005](https://doi.org/10.1063/5.0016005) [arXiv:2006.01915](https://arxiv.org/abs/2006.01915)
 - Nongnuch Artrith and Alexander Urban, [Comput. Mater. Sci. 114 (2016) 135-150.](https://doi.org/10.1016/j.commatsci.2015.11.047)
