@@ -77,13 +77,15 @@ function c_RADFn(Rj, nmax, lmax, Rc)
     return D
 end
 
-function c_RADFnnl(Rj, nmax, lmax, Rc; wj=nothing)
-    if wj == nothing
-        wj = 1.
-    end
+function c_RADFnnl_template(Rj, nmax, lmax, Rc)
     dj = norm.(Rj)
     fc_ij = cutoff_func(dj, Rc)
-    D = zeros(nmax, nmax, lmax)
+    rcount = 0
+    for j = 1:length(Rj)-1, k = j+1:length(Rj)
+        rcount += 1
+    end
+    D = zeros(rcount, nmax, nmax, lmax)
+    rcount = 0
     for j = 1:length(Rj)-1, k = j+1:length(Rj)
        scaled_rj = (2.0 * dj[j] - Rc) / Rc
        scaled_rk = (2.0 * dj[k] - Rc) / Rc
@@ -93,24 +95,53 @@ function c_RADFnnl(Rj, nmax, lmax, Rc; wj=nothing)
        scaled_theta = (2.0 * cos_theta_ijk - chsfPI) / chsfPI
        Aijk = ch_T(scaled_theta, lmax-1)
        for n = 1:nmax, np = 1:nmax, l = 1:lmax
-           D[n, np, l] += Aijk[l] * Pj[n] * Pk[np]
+           D[rcount, n, np, l] = Aijk[l] * Pj[n] * Pk[np]
        end
-       D[:,:,:] .*= wj[j] .* wj[k]
+       rcount += 1
     end 
     return D[:]
 end
 
-function c_RADFnnl_weights(DD, W, nmax, lmax)
+function c_RADFnnl(Rj, nmax, lmax, Rc; w=nothing)
+    dj = norm.(Rj)
+    fc_ij = cutoff_func(dj, Rc)
+    D = zeros(nmax, nmax, lmax)
+    for j = 1:length(Rj)-1, k = j+1:length(Rj)
+       wj = 1.
+       wk = 1.
+       if w != nothing
+          wj = w[j]
+          wk = w[k]
+       end
+       scaled_rj = (2.0 * dj[j] - Rc) / Rc
+       scaled_rk = (2.0 * dj[k] - Rc) / Rc
+       Pj = ch_T(scaled_rj, nmax-1) * fc_ij[j]
+       Pk = ch_T(scaled_rk, nmax-1) * fc_ij[k]
+       cos_theta_ijk = dot(Rj[j], Rj[k]) / (dj[j]*dj[k])
+       scaled_theta = (2.0 * cos_theta_ijk - chsfPI) / chsfPI
+       Aijk = ch_T(scaled_theta, lmax-1)
+       for n = 1:nmax, np = 1:nmax, l = 1:lmax
+           D[n, np, l] += Aijk[l] * Pj[n] * Pk[np] .* wj .* wk
+       end
+    end 
+    return D[:]
+end
+
+function c_RADFnnl_weights(Dtemplate, W, lenRj, nmax, lmax)
     D = zeros(size(W,1), nmax, nmax, lmax)
     for wi = 1:size(W,1)
-       for j = 1:length(Rj)-1, k = j+1:length(Rj)
-          D[wi,:,:,:] = DD[:,:,:] .* W[wi,j] .* W[wi,k]
+       c = 0
+       for j = 1:lenRj-1, k = j+1:lenRj
+          for n = 1:nmax, np = 1:nmax, l = 1:lmax
+             D[wi, n, np, l] += Dtemplate[c, n, np, l] .* W[wi, j] .* W[wi, k]
+          end
+          c += 1
        end
     end 
     return D[:]
 end
 
-function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false, wj=nothing)
+function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false, w=nothing)
     if n == nothing
         n = 0
     end
@@ -118,7 +149,7 @@ function chsf_desc_RADF(Rs, Rc; n=nothing, l=nothing, np=false, wj=nothing)
         l = 0
     end
     if np
-        return c_RADFnnl(Rs, n+1, l+1, Rc, wj=wj)
+        return c_RADFnnl(Rs, n+1, l+1, Rc, w=w)
     else
         return c_RADFn(Rs, n+1, l+1, Rc)
     end
@@ -142,28 +173,50 @@ function chsf_desc(Rs, Rc; n=nothing, l=nothing)
     return descriptor
 end
 
-function chsf_jlist(at, Rc)
-    js = []
+function chsf_ijR(at, Rc)
+    ni = []
+    nj = []
+    nR = []
     for (i, j, R) in pairs(neighbourlist(at, Rc))
-        push!(js, j)
+        push!(ni, i)
+        push!(nj, j)
+        push!(nR, R)
     end
-    return js
+    return ni, nj, nR
+end
+
+function chsf_RADF_weights(DT, w, at, ni, nj, lenR, n, l)
+    representation = []
+    for i=1:length(at)
+        ns = nj[(ni .== i)]
+        ws = [w[j,:] for j in ns].T
+        push!(representation, w[i] .* c_RADFnnl_weights(DT, ws, lenR, n, l))
+    end
+    return representation
 end
 
 function chsf_RADF(at, Rc; n=nothing, l=nothing, np=true, w=nothing)
     representation = []
     ni = []
     nR = []
-    nw = []
+    if w != nothing
+       nw = []
+    end
     for (i, j, R) in pairs(neighbourlist(at, Rc))
         push!(ni, i)
         push!(nR, R)
-        push!(nw, w[j])
+        if w != nothing
+           push!(nw, w[j])
+        end
     end
     for i=1:length(at)
         Rs = nR[(ni .== i)]
-        ws = nw[(ni .== i)]
-        push!(representation,chsf_desc_RADF(Rs, Rc, n=n, l=l, np=np, wj=ws))
+        if w != nothing
+           ws = nw[(ni .== i)]
+           push!(representation, w[i] .* chsf_desc_RADF(Rs, Rc, n=n, l=l, np=np, w=ws))
+        else
+           push!(representation, chsf_desc_RADF(Rs, Rc, n=n, l=l, np=np))
+        end
     end
     return representation
 end
