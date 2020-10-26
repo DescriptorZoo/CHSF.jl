@@ -3,7 +3,7 @@ module CHSF
 using JuLIP
 using LinearAlgebra
 
-export chsf, chsf_RADF, chsf_desc_RADF, chsf_desc
+export chsf, chsf_RADF, chsf_desc_RADF, chsf_desc, chsf_RADF_weights, c_RADFnnl_template, chsf_ijR_template
 
 chsfPI = 3.14159265358979
 
@@ -99,7 +99,7 @@ function c_RADFnnl_template(Rj, nmax, lmax, Rc)
        end
        rcount += 1
     end 
-    return D[:]
+    return D
 end
 
 function c_RADFnnl(Rj, nmax, lmax, Rc; w=nothing)
@@ -127,13 +127,13 @@ function c_RADFnnl(Rj, nmax, lmax, Rc; w=nothing)
     return D[:]
 end
 
-function c_RADFnnl_weights(Dtemplate, W, lenRj, nmax, lmax)
+function c_RADFnnl_weights(DT, W, lenRj, nmax, lmax)
     D = zeros(size(W,1), nmax, nmax, lmax)
     for wi = 1:size(W,1)
        c = 0
        for j = 1:lenRj-1, k = j+1:lenRj
           for n = 1:nmax, np = 1:nmax, l = 1:lmax
-             D[wi, n, np, l] += Dtemplate[c, n, np, l] .* W[wi, j] .* W[wi, k]
+             D[wi, n, np, l] += DT[c, n, np, l] .* W[wi, j] .* W[wi, k]
           end
           c += 1
        end
@@ -173,7 +173,8 @@ function chsf_desc(Rs, Rc; n=nothing, l=nothing)
     return descriptor
 end
 
-function chsf_ijR(at, Rc)
+function chsf_ijR_template(at, Rc)
+    DT = []
     ni = []
     nj = []
     nR = []
@@ -182,7 +183,11 @@ function chsf_ijR(at, Rc)
         push!(nj, j)
         push!(nR, R)
     end
-    return ni, nj, nR
+    for i=1:length(at)
+        Rs = nR[(ni .== i)]
+        push!(DT, c_RADFnnl_template(Rs, n, l, Rc))
+    end
+    return DT, ni, nj, nR
 end
 
 function chsf_RADF_weights(DT, w, at, ni, nj, lenR, n, l)
@@ -190,7 +195,7 @@ function chsf_RADF_weights(DT, w, at, ni, nj, lenR, n, l)
     for i=1:length(at)
         ns = nj[(ni .== i)]
         ws = [w[j,:] for j in ns].T
-        push!(representation, w[i] .* c_RADFnnl_weights(DT, ws, lenR, n, l))
+        push!(representation, w[i,:] .* c_RADFnnl_weights(DT, ws, lenR, n, l))
     end
     return representation
 end
