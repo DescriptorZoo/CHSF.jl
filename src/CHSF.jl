@@ -85,7 +85,7 @@ function c_RADFnnl_template(Rj, nmax, lmax, Rc)
         rcount += 1
     end
     D = zeros(rcount, nmax, nmax, lmax)
-    rcount = 0
+    rcount = 1
     for j = 1:length(Rj)-1, k = j+1:length(Rj)
        scaled_rj = (2.0 * dj[j] - Rc) / Rc
        scaled_rk = (2.0 * dj[k] - Rc) / Rc
