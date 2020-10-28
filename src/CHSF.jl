@@ -173,7 +173,7 @@ function chsf_desc(Rs, Rc; n=nothing, l=nothing)
     return descriptor
 end
 
-function chsf_ijR_template(at, Rc)
+function chsf_ijR_template(at, Rc, n, l)
     DT = []
     ni = []
     nj = []
@@ -184,6 +184,7 @@ function chsf_ijR_template(at, Rc)
         push!(nR, R)
     end
     for i=1:length(at)
+        println(i)
         Rs = nR[(ni .== i)]
         push!(DT, c_RADFnnl_template(Rs, n, l, Rc))
     end
